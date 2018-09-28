@@ -26,8 +26,12 @@ then
     make install
     cd ..
     rm Python-2.7.15.tgz
-    rm -rf Python-3.7.15
+    rm -rf Python-2.7.15
 fi
+
+# install pip if it is not preinstalled.
+
+python2/bin/python2.7 -m ensurepip --default-pip
 
 # numpy
 
@@ -45,4 +49,6 @@ python2/bin/pip2.7 install matplotlib --no-deps
 
 python2/bin/pip2.7 install astroML
 
+# h5py
 
+python2/bin/pip2.7 install h5py
