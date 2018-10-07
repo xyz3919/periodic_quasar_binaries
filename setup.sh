@@ -20,7 +20,9 @@ then
     tar -xzf Python-2.7.15.tgz
     mkdir python2
     cd Python-2.7.15
-    ./configure --prefix=${dir_packages}/python2
+    ./configure --prefix=${dir_packages}/python2 \
+                LDFLAGS="-L${dir_packages}/python2/extlib/lib -Wl,--rpath=${dir_packages}/python2/lib -Wl,--rpath=${dir_packages}/python2/extlib/lib" \
+                CPPFLAGS="-I${dir_packages}/python2/extlib/include"
     make
     make test
     make install
@@ -35,20 +37,32 @@ python2/bin/python2.7 -m ensurepip --default-pip
 
 # numpy
 
-python2/bin/pip2.7 install numpy --no-deps
+python2/bin/pip2.7 install numpy 
 
 # astropy
 
-python2/bin/pip2.7 install astropy --no-deps
+python2/bin/pip2.7 install astropy 
 
 # matplotlib
 
-python2/bin/pip2.7 install matplotlib --no-deps
+python2/bin/pip2.7 install matplotlib 
 
 # astroML
 
-python2/bin/pip2.7 install astroML
+python2/bin/pip2.7 install astroML_addons
 
 # h5py
 
 python2/bin/pip2.7 install h5py
+
+# emcee
+
+python2/bin/pip2.7 install emcee
+
+# pandas
+
+python2/bin/pip2.7 install pandas
+
+# make each directory
+
+mkdir {data,output}

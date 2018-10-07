@@ -1,1 +1,1 @@
-## All the data stored in this directory.
+## All the data are stored in this directory.

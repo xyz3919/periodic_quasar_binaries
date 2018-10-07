@@ -11,7 +11,12 @@ import scipy.optimize as op
 
 
 class quasar_drw:
-    """ This version directly fits state space """
+
+    """ 
+    Originally written by Wei-Ting Liao 2018
+    Modified by Yu-Ching (Tony) Chen Oct. 2018
+    This version directly fits state space 
+    """
     
     def __init__(self, time, signal, error, redshift, preprocess=True):
         self.time     = np.array(time,   dtype=np.float64)
@@ -37,7 +42,8 @@ class quasar_drw:
             self.__Tspan    = float( np.max(self.time) - np.min(self.time) )
             self.__Ndata    = len(self.signal)
             self.__psd_freq = \
-                np.linspace(1.0/self.__Tspan, self.__Ndata/(2.0*self.__Tspan), self.__Ndata) 
+                np.linspace(1.0/self.__Tspan, self.__Ndata/(2.0*self.__Tspan), 10*self.__Ndata)
+               # np.linspace(1.0/self.__Tspan, self.__Ndata/(2.0*self.__Tspan), self.__Ndata) 
             self.__dt = self.__Tspan / float(self.__Ndata)
             self.__df = self.__psd_freq[1] - self.__psd_freq[0]
         else:
