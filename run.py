@@ -1,11 +1,16 @@
 import numpy as np
 import pandas as pd
-
+import os
 from quasar_drw import quasar_drw as qso_drw
 from plot import plot
 import query as query
 
-from scipy.optimize import leastsq
+from scipy.optimize import curve_fit
+
+def read_quasar_catalog(filename):
+
+    df = pd.read_csv(filename)
+    return df
 
 def read_DES(name,band):
 
@@ -28,12 +33,30 @@ def read_SDSS(name,band):
     data_SDSS_return = data_SDSS[["mjd_"+band,"psfmag_"+band,"psfMagErr_"+band]].values 
     return data_SDSS_return[:,0],data_SDSS_return[:,1],data_SDSS_return[:,2]
 
-def sin_func(x,_freq_max,amplitude,ref_day,median):
+def create_dir(directory):
 
-    return amplitude*np.sin(2*np.pi*x/_freq_max+ref_day)+median
+    if not os.path.exists(directory):
+        os.makedirs(directory)
 
-def residual(p, x, y,_freq_max):
-    return y - sin_func(x, _freq_max, *p)
+def fitting(time,signal,error,period):
+
+    def sin_func(x,amplitude,ref_day,median):
+        return amplitude*np.sin(2*np.pi*x/period+ref_day)+median
+    p0 = [1,50000,20]
+    popt, pcov = curve_fit(sin_func, time, signal,p0=p0,sigma=error)
+    
+    xn = np.linspace(np.min(time)-100,np.max(time)+100,10000)
+    yn = sin_func(xn,*popt)
+    return xn,yn
+   
+def save_freq_amp(_freq, psd,filename):
+
+     save_data = zip(_freq,psd)
+     np.savetxt(filename,save_data,delimiter=",",header="period,amplitude")
+
+#####################
+##  main functions ##
+#####################
 
 def main(ra,dec,name):
 
@@ -45,6 +68,7 @@ def main(ra,dec,name):
     periodogram = plot(2,2)
     lightcurve = plot(4,1,figsize=(8,8),sharex=True)
 
+    create_dir("output/"+name)
     for band in bands:
 
         mjd_DES,mag_DES,magerr_DES = read_DES(name,band)
@@ -68,14 +92,14 @@ def main(ra,dec,name):
         periodogram.plot_periodogram(_freq, psd,band)
  
         _freq_max = _freq[np.where(psd==np.max(psd))]
-        p0 = [0.5,20,51000]
-        popt,pcov = leastsq(residual, p0,\
-                                  args=(time,signal,np.array([_freq_max]*len(time))))
-        yn = sin_func(time,[_freq_max]*len(time),*popt)
-        plot_fit_curve(time,yn,band)
+        xn,yn = fitting(time,signal,error,_freq_max)
+        lightcurve.plot_fit_curve(xn,yn,band)
+        save_freq_amp(_freq, psd,"output/"+name+"/periodogram_"+band+".csv")
+    lightcurve.savefig("output/"+name,"/lightcurve.png",name)
+    periodogram.savefig("output/"+name,"/periodogram.png",name)
+    
 
-    lightcurve.savefig("output/","lightcurve.png",name)
-    periodogram.savefig("output/","periodogram.png",name)
+
 
 if __name__ == "__main__":
 

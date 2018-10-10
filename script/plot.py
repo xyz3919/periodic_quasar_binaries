@@ -27,8 +27,10 @@ class plot:
         ax.set_xscale("log")
         ax.set_xticks([1,2,4,8,10])
         ax.set_xticklabels([1,2,4,8,10])
-        ax.set_xlabel("Period(yr)")
-        ax.set_ylabel("Power")
+        if band == "i" or  band == "z":
+            ax.set_xlabel("Period(yr)")
+        if band == "g" or  band == "i":
+            ax.set_ylabel("Power")
         ax.legend()
 
     def plot_light_curve(self,time,signal,error,band):
