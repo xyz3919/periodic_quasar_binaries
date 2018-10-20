@@ -96,7 +96,7 @@ def save_freq_confidence_interval(_freq,boundary_all,filename):
 def tailored_simulation(lc,time,signal,band,z,name,output_dir,periodogram,lightcurve,random_state):
 
     psd_mock_all = []
-    parameters_list =  lc.fit_drw_emcee(nwalkers=100, burnin=100, Nstep=400,random_state=random_state)
+    parameters_list =  lc.fit_drw_emcee(nwalkers=50, burnin=50, Nstep=200,random_state=random_state)
     for parameters in parameters_list:
         tau,b,c = np.exp(parameters)
         mock_signal = lc.generate_mock_lightcurve(tau,b,c,time,z,random_state)

@@ -37,31 +37,31 @@ python2/bin/python2.7 -m ensurepip --default-pip
 
 # numpy
 
-python2/bin/pip2.7 install numpy 
+python2/bin/python2.7 -m pip install numpy
 
 # astropy
 
-python2/bin/pip2.7 install astropy 
+python2/bin/python2.7 -m pip install astropy
 
 # matplotlib
 
-python2/bin/pip2.7 install matplotlib 
+python2/bin/python2.7 -m pip installmatplotlib
 
 # astroML
 
-python2/bin/pip2.7 install astroML_addons
+python2/bin/python2.7 -m pip install astroML_addons
 
 # h5py
 
-python2/bin/pip2.7 install h5py
+python2/bin/python2.7 -m pip install h5py
 
 # emcee
 
-python2/bin/pip2.7 install emcee
+python2/bin/pip2.7 python2.7 -m pip install emcee
 
 # pandas
 
-python2/bin/pip2.7 install pandas
+python2/bin/pip2.7 python2.7 -m pip install pandas
 
 # make each directory
 
