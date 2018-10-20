@@ -27,11 +27,38 @@ class plot:
         ax.set_xscale("log")
         ax.set_xticks([1,2,4,8,10])
         ax.set_xticklabels([1,2,4,8,10])
+        ax.fill_betweenx([0.0, 1.05], 0.8,  1.2, color='grey', alpha='0.5')
+        ax.fill_betweenx([0.0, 1.05], max(_freq)/365/2,  max(_freq)/365, color='grey', alpha='0.5')
         if band == "i" or  band == "z":
             ax.set_xlabel("Period(yr)")
         if band == "g" or  band == "i":
             ax.set_ylabel("Power")
-        ax.legend()
+        ax.annotate(band, xy=(-12, -12), xycoords='axes points',
+                    size=12, ha='right', va='top', color=color_list[band],
+                    bbox=dict(boxstyle='round', fc='w'))
+#        ax.legend()
+
+
+    def plot_mock_periodogram(self,_freq, psd,band):
+
+        ax_list = {"g":self.axes[0,0],"r":self.axes[0,1],\
+                   "i":self.axes[1,0],"z":self.axes[1,1]}
+        color_list = {"g":"g","r":"orange",\
+                      "i":"brown","z":"purple"}
+        ax = ax_list[band]
+        ax.plot(_freq/365,psd,label=band,c="grey",linewidth=0.01)
+
+    def plot_confidence_level(self,_freq, psd_total,band):
+        ax_list = {"g":self.axes[0,0],"r":self.axes[0,1],\
+                   "i":self.axes[1,0],"z":self.axes[1,1]}
+        color_list = {"g":"g","r":"orange",\
+                      "i":"brown","z":"purple"}
+        ax = ax_list[band]
+        psd_at_each__freq = zip(*psd_total)         
+        percentiles = [68.27,95.45,99.0,99.74,99.99]
+        for percentile in percentiles:
+           bounday_psd_at_each__freq = [np.percentile(psd,50+percentile/2.) for psd in psd_at_each__freq]
+           ax.plot(_freq/365,bounday_psd_at_each__freq,"--",c="black",linewidth=0.2)
 
     def plot_light_curve(self,time,signal,error,band):
 
@@ -46,7 +73,9 @@ class plot:
         if band == "z":
             ax.set_xlabel("MJD")
         ax.set_ylabel("Magnitude") 
-        ax.legend()
+        ax.annotate(band, xy=(-12, -12), xycoords='axes points',
+                    size=12, ha='right', va='top', color=color_list[band],
+                    bbox=dict(boxstyle='round', fc='w'))
 
     def plot_fit_curve(self,time,signal,band):
 
@@ -58,10 +87,18 @@ class plot:
         ax.plot(time,signal,\
                 label=band,c=color_list[band])
 
+    def plot_mock_curve(self,time,signal,band):
+
+        ax_list = {"g":self.axes[0],"r":self.axes[1],\
+                   "i":self.axes[2],"z":self.axes[3]}
+        ax = ax_list[band]
+        ax.plot(time,signal,label=band,c="grey",linewidth=1)
+
     def savefig(self,dir_output,name,title):
 
         plt.tight_layout(rect=[0, 0.03, 1, 0.95])
         self.f.suptitle(title)
         self.f.savefig(dir_output+name)
+        plt.close()
         
 

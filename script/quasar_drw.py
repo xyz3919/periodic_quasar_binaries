@@ -8,6 +8,7 @@ import os, subprocess
 from scipy.optimize import curve_fit
 import emcee
 import scipy.optimize as op
+from astroML.time_series import generate_damped_RW
 
 
 class quasar_drw:
@@ -116,6 +117,77 @@ class quasar_drw:
         LS_lc = lomb_scargle(self.time, self.signal, self.error, self.__psd_freq*(2.0*np.pi), generalized=True)
         
         return 1.0/self.__psd_freq, LS_lc
+
+    def periodogram(self,time,signal):
+
+        LS_lc = lomb_scargle(time, signal, abs(signal)*0.01, self.__psd_freq*(2.0*np.pi), generalized=True)
+        return 1.0/self.__psd_freq, LS_lc
+
+    ### ********************************* ###
+    ###         for drw modeling          ###
+    ### ********************************* ###
+    
+    def fit_drw_emcee(self, nwalkers=500, burnin=150, Nstep=500,random_state=np.random.RandomState(0)):
+        ndim    = 3
+        pos     = []
+        
+        z           = self.redshift
+        time        = self.time
+        signal      = self.signal
+        error       = self.error
+        
+        # use most likely val as a initial guess
+        nll = lambda *args: -lnlike(*args)
+        result = op.minimize(nll, [np.log(300.), np.log(0.01**2.0), np.log(np.mean(signal)/300.)], args=(self.time, self.signal, self.error, self.redshift))
+        
+        tau_center = np.exp(result["x"][0])
+        c_center   = np.exp(result["x"][1])
+        b_center   = np.exp(result["x"][2])
+        
+        print("Initial guess of (tau, c, b) = (" + format(np.exp(result["x"][0]), ".2f") + ", " \
+                                                 + format(np.exp(result["x"][1]), ".2e") + ", " \
+                                                 + format(np.exp(result["x"][2]), ".2f") + " )" )
+        
+        ## initiate a gaussian distribution aroun dthe mean value
+        ## modify this part if needed
+        tau_sample = np.random.lognormal(mean=np.log(tau_center), sigma=1.0, size=nwalkers)
+#        tau_sample = np.random.lognormal(mean=np.log(tau_center), sigma=0.1, size=nwalkers)
+        c_sample   = np.random.lognormal(mean=np.log(c_center),   sigma=1.5, size=nwalkers)
+#        c_sample   = np.random.lognormal(mean=np.log(c_center),   sigma=0.1, size=nwalkers)
+        b_sample   = np.random.lognormal(mean=np.log(b_center),   sigma=1.0, size=nwalkers)
+#        b_sample   = np.random.lognormal(mean=np.log(b_center),   sigma=0.1, size=nwalkers)
+        
+        tau_sample, c_sample, b_sample = np.log(tau_sample), np.log(c_sample), np.log(b_sample)
+        
+        for i in range(nwalkers):
+            parameter = np.array([tau_sample[i], c_sample[i], b_sample[i]])
+            pos.append(parameter)
+        sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(time, signal, error, z), a=4.0)
+        
+        # start MCMC
+        sampler.run_mcmc(pos, Nstep)
+    
+        # remove burn-in
+        burnin = burnin
+        samples = sampler.chain[:, burnin:, :].reshape((-1, ndim))
+        
+        ## depending on the preference, return whatever you prefer
+        return samples
+#        return [[tau_center,c_center,b_center]]
+
+    def generate_mock_lightcurve(self,tau,b,c,time,z,random_state=np.random.RandomState(0)):
+  
+        time_res = time/(1+z)
+        time_res_cont = np.linspace(min(time_res),max(time_res),100000)
+        xmean = b*tau
+        SFinf = c*np.sqrt(tau/2.)
+        lightcurve_DRW_res_cont = generate_damped_RW(time_res_cont,tau,z,xmean=xmean,SFinf=SFinf,random_state=random_state)
+        lightcurve_DRW_res = np.interp(time_res, time_res_cont, lightcurve_DRW_res_cont)
+        lightcurve_DRW_obs = lightcurve_DRW_res
+        
+        return lightcurve_DRW_obs
+
+        
 
     
     ### ********************************* ###
@@ -226,5 +298,105 @@ class quasar_drw:
     ##### ------------------------------- #####
 
 
+#######################################################
+## ======== Function for MCMC model fitting ======== ##
+#######################################################
+def likelihood_a(time, tau_fit):
+    Ndata = len(time)
+    a_array = np.zeros(Ndata, dtype=np.float64)
+    
+    for i in range(1, Ndata):
+        a_array[i] = np.exp( -(time[i]-time[i-1])/tau_fit )
+        
+    return a_array
+
+
+def likelihood_omega(time, error, tau_fit, c_fit):
+    Ndata   = len(time)
+    a_array = likelihood_a(time, tau_fit)
+    omega   = np.zeros(Ndata, dtype=np.float64)
+    
+    omega[0] = 0.5*tau_fit*c_fit
+    
+    for i in range(1, Ndata):
+        omega[i] = omega[0]*(1.0-a_array[i]**2.0) + \
+                    a_array[i]**2.0*omega[i-1]*( 1.0- omega[i-1]/(omega[i-1]+error[i-1]**2.0) )
+    
+    return omega
+    
+
+def likelihood_X(time, signal, error, tau_fit, c_fit, b_fit, X0=0.0):
+    # this is X head (fitted X) in Kelly+09
+    Ndata = len(time)
+    a_array = likelihood_a(time, tau_fit)
+    omega   = likelihood_omega(time, error, tau_fit, c_fit)
+    signal_0mean = signal - b_fit*tau_fit
+    
+    X_array = np.zeros(Ndata, dtype=np.float64)
+    X_array[0] = X0
+    
+    for i in range(1, Ndata):
+        X_array[i] = a_array[i]*X_array[i-1] + \
+                     a_array[i]*omega[i-1]/(omega[i-1]+error[i-1]**2.0)*(signal_0mean[i-1] - X_array[i-1])
+    
+    return X_array
+
+
+def likelihood_P(time, signal, error, tau_fit, c_fit, b_fit):
+    Ndata = len(time)
+    a_array = likelihood_a(time, tau_fit)
+    omega   = likelihood_omega(time, error, tau_fit, c_fit)
+    X_array = likelihood_X(time, signal, error, tau_fit, c_fit, b_fit)
+    signal_0mean = signal - b_fit*tau_fit
+    
+    P_array = np.zeros(Ndata, dtype=np.float64)
+    for i in range(Ndata):
+        P_array[i] = 1.0/np.sqrt((2.0*np.pi)*(omega[i]+error[i]**2.0)) * \
+                     np.exp(-0.5 * ( (X_array[i]-signal_0mean[i])**2.0/(omega[i]+error[i]**2.0) ) )
+                     
+    return P_array
+
+
+# set up for likelihood function
+def lnlike(theta, time, signal, error, z):
+    lntau, lnc, lnb = theta
+    tau_fit = np.exp(lntau) * (1.0+z)
+    c_fit   = np.exp(lnc) * np.sqrt(1.0+z)
+    b_fit   = np.exp(lnb) / (1.0+z)
+    P_array = likelihood_P(time, signal, error, tau_fit, c_fit, b_fit)
+    Prob    = np.prod(P_array)
+        
+    if np.isfinite(Prob) and Prob > 0.:
+        return np.log(Prob)
+    else:
+        return -np.inf
+
+
+# set up for prior 
+def lnprior(theta, z, time):    
+    # prior is determined in the rest frame, no need to multiply (1+z)
+    lntau, lnc, lnb = theta
+    tau_fit, c_fit, b_fit = np.exp(lntau), np.exp(lnc), np.exp(lnb)
+    
+    if 1.0 < tau_fit*(1.0+z) < (np.max(time)-np.min(time)) and c_fit > 0.0:
+        return 0.0
+    else:
+        return -np.inf
+
+
+# set up posterior 
+def lnprob(theta, time, signal, error, z):    
+    lp = lnprior(theta, z, time)
+    lk = lnlike(theta, time, signal, error, z)
+    lnprob_out = lp + lnlike(theta, time, signal, error, z)
+    
+    if ( np.isfinite(lp) and np.isfinite(lk) ):
+        return lp+lk
+    else:
+        return -np.inf
+            
+########################################
+## ======== END MCMCfunction ======== ##
+########################################
 
 
