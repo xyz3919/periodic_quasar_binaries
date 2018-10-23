@@ -93,12 +93,27 @@ def save_freq_confidence_interval(_freq,boundary_all,filename):
      save_data = np.concatenate((period, psd_array), axis=1)
      np.savetxt(filename,save_data,delimiter=",",header="period,amplitudes")
 
+def clean_parameters_list(parameters_list):
+
+    num_parameters = len(parameters_list[0])
+    for i in range(0,num_parameters-1):
+        array = parameters_list[:,i]
+        sigma = np.std(array)
+        mean = np.mean(array)
+        parameters_list = parameters_list[(array<mean+2*sigma) & (array>mean-2*sigma)] 
+
+    return parameters_list
+
+
 def tailored_simulation(lc,time,signal,band,z,name,output_dir,periodogram,lightcurve,random_state):
 
     psd_mock_all = []
-    parameters_list =  lc.fit_drw_emcee(nwalkers=80, burnin=50, Nstep=300,random_state=random_state)
-    for parameters in parameters_list:
-        tau,b,c = np.exp(parameters)
+    parameters_list =  lc.fit_drw_emcee(nwalkers=40, burnin=50, Nstep=80,random_state=random_state)
+    parameters_list_good = clean_parameters_list(parameters_list)
+    for i in range(1000):
+#    for parameters in parameters_list:
+        tau,b,c = np.exp(parameters_list_good[np.random.randint(len(parameters_list_good))])
+#        tau,b,c = np.exp(parameters)
         mock_signal = lc.generate_mock_lightcurve(tau,b,c,time,z,random_state)
         #print np.mean(signal)
         mock_signal_correct = mock_signal+np.mean(signal)
