@@ -29,8 +29,8 @@ class plot:
         ax.set_xscale("log")
         ax.set_xticks([1,2,4,8,10])
         ax.set_xticklabels([1,2,4,8,10])
-        ax.fill_betweenx([0.0, 1.05], 0.8,  1.2, color='grey', alpha='0.5')
-        ax.fill_betweenx([0.0, 1.05], max(_freq)/365/2,  max(_freq)/365, color='grey', alpha='0.5')
+        ax.fill_betweenx([0.0, 1.05], 0.8,  500./365., color='grey', alpha='0.5')
+        ax.fill_betweenx([0.0, 1.05], max(_freq)/365/3,  max(_freq)/365, color='grey', alpha='0.5')
         if band == "i" or  band == "z":
             ax.set_xlabel("Period(yr)")
         if band == "g" or  band == "i":
@@ -94,7 +94,7 @@ class plot:
         ax_list = {"g":self.axes[0],"r":self.axes[1],\
                    "i":self.axes[2],"z":self.axes[3]}
         ax = ax_list[band]
-        ax.plot(time,signal,label=band,c="grey",linewidth=1)
+        ax.plot(time,signal,label=band,c="grey",linewidth=0.01)
 
     def savefig(self,dir_output,name,title):
 

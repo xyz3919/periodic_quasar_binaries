@@ -120,7 +120,7 @@ class quasar_drw:
 
     def periodogram(self,time,signal):
 
-        LS_lc = lomb_scargle(time, signal, abs(signal)*0.01, self.__psd_freq*(2.0*np.pi), generalized=True)
+        LS_lc = lomb_scargle(time, signal, self.error, self.__psd_freq*(2.0*np.pi), generalized=True)
         return 1.0/self.__psd_freq, LS_lc
 
     ### ********************************* ###
@@ -138,7 +138,7 @@ class quasar_drw:
         
         # use most likely val as a initial guess
         nll = lambda *args: -lnlike(*args)
-        result = op.minimize(nll, [np.log(300.), np.log(0.01**2.0), np.log(np.mean(signal)/300.)], args=(self.time, self.signal, self.error, self.redshift))
+        result = op.minimize(nll, [np.log(300.), np.log(0.00001), np.log(np.mean(signal)/300.)], args=(self.time, self.signal, self.error, self.redshift))
         
         tau_center = np.exp(result["x"][0])
         c_center   = np.exp(result["x"][1])
@@ -150,6 +150,7 @@ class quasar_drw:
         
         ## initiate a gaussian distribution aroun dthe mean value
         ## modify this part if needed
+#        c_center = 0.02
         tau_sample = np.random.lognormal(mean=np.log(tau_center), sigma=1.0, size=nwalkers)
 #        tau_sample = np.random.lognormal(mean=np.log(tau_center), sigma=0.1, size=nwalkers)
         c_sample   = np.random.lognormal(mean=np.log(c_center),   sigma=1.5, size=nwalkers)
@@ -157,6 +158,7 @@ class quasar_drw:
         b_sample   = np.random.lognormal(mean=np.log(b_center),   sigma=1.0, size=nwalkers)
 #        b_sample   = np.random.lognormal(mean=np.log(b_center),   sigma=0.1, size=nwalkers)
         
+        print c_sample
         tau_sample, c_sample, b_sample = np.log(tau_sample), np.log(c_sample), np.log(b_sample)
         
         for i in range(nwalkers):
@@ -170,7 +172,6 @@ class quasar_drw:
         # remove burn-in
         burnin = burnin
         samples = sampler.chain[:, burnin:, :].reshape((-1, ndim))
-        
         ## depending on the preference, return whatever you prefer
         return samples
 #        return [[tau_center,c_center,b_center]]
@@ -178,14 +179,15 @@ class quasar_drw:
     def generate_mock_lightcurve(self,tau,b,c,time,z,random_state=np.random.RandomState(0)):
   
         time_res = time/(1+z)
-        time_res_cont = np.linspace(min(time_res),max(time_res),100000)
+        time_res_cont = np.linspace(min(time_res),max(time_res),10000)
         xmean = b*tau
-        SFinf = c*np.sqrt(tau/2.)
+        SFinf = np.sqrt(c*tau/2.)
         lightcurve_DRW_res_cont = generate_damped_RW(time_res_cont,tau,z,xmean=xmean,SFinf=SFinf,random_state=random_state)
         lightcurve_DRW_res = np.interp(time_res, time_res_cont, lightcurve_DRW_res_cont)
         lightcurve_DRW_obs = lightcurve_DRW_res
-        
-        return lightcurve_DRW_obs
+        #lightcurve_DRW_obs = lightcurve_DRW_res_cont
+        #time = time_res_cont*(1+z)
+        return time,lightcurve_DRW_obs
 
         
 
