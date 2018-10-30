@@ -151,11 +151,11 @@ class quasar_drw:
         ## initiate a gaussian distribution aroun dthe mean value
         ## modify this part if needed
 #        c_center = 0.02
-        tau_sample = np.random.lognormal(mean=np.log(tau_center), sigma=1.0, size=nwalkers)
+        tau_sample = random_state.lognormal(mean=np.log(tau_center), sigma=1.0, size=nwalkers)
 #        tau_sample = np.random.lognormal(mean=np.log(tau_center), sigma=0.1, size=nwalkers)
-        c_sample   = np.random.lognormal(mean=np.log(c_center),   sigma=1.5, size=nwalkers)
+        c_sample   = random_state.lognormal(mean=np.log(c_center),   sigma=1.5, size=nwalkers)
 #        c_sample   = np.random.lognormal(mean=np.log(c_center),   sigma=0.1, size=nwalkers)
-        b_sample   = np.random.lognormal(mean=np.log(b_center),   sigma=1.0, size=nwalkers)
+        b_sample   = random_state.lognormal(mean=np.log(b_center),   sigma=1.0, size=nwalkers)
 #        b_sample   = np.random.lognormal(mean=np.log(b_center),   sigma=0.1, size=nwalkers)
         
         print c_sample
@@ -164,7 +164,7 @@ class quasar_drw:
         for i in range(nwalkers):
             parameter = np.array([tau_sample[i], c_sample[i], b_sample[i]])
             pos.append(parameter)
-        sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(time, signal, error, z), a=4.0)
+        sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(time, signal, error, z), a=4.0,random_state=random_state)
         
         # start MCMC
         sampler.run_mcmc(pos, Nstep)

@@ -109,16 +109,17 @@ def clean_parameters_list(parameters_list):
 def tailored_simulation(lc,time,signal,band,z,name,output_dir,periodogram,lightcurve,random_state):
 
     psd_mock_all = []
-    parameters_list =  lc.fit_drw_emcee(nwalkers=50, burnin=100, Nstep=200,random_state=random_state)
+#    parameters_list =  lc.fit_drw_emcee(nwalkers=100, burnin=100, Nstep=200,random_state=random_state)
+    parameters_list =  lc.fit_drw_emcee(nwalkers=10, burnin=10, Nstep=20,random_state=random_state)
     parameters_list_good = clean_parameters_list(parameters_list)
-    for i in range(5000):
+    for i in range(50):
 #    for parameters in parameters_list:
-        tau,c,b = np.exp(parameters_list_good[np.random.randint(len(parameters_list_good))])
+        tau,c,b = np.exp(parameters_list_good[random_state.randint(len(parameters_list_good))])
 #        tau,b,c = np.exp(parameters)
-        mock_time,mock_signal = lc.generate_mock_lightcurve(tau,b,c,time,z,random_state)
+        mock_time,mock_signal = lc.generate_mock_lightcurve(tau,b,c,time,z,random_state=random_state)
         #print np.mean(signal)
         mock_signal_correct = mock_signal#+np.mean(signal)
-        lightcurve.plot_mock_curve(mock_time,mock_signal_correct,band)
+        #lightcurve.plot_mock_curve(mock_time,mock_signal_correct,band)
         #print mock_signal_correct
         _freq_mock, psd_mock = lc.periodogram(mock_time,mock_signal)
         psd_mock_all.append(psd_mock)
@@ -219,7 +220,6 @@ def is_candidate_good(name):
 
 def is_candidate_strong(name):
 
-    """ HAVN'T FINISHED !!! """
     upper_period = 8*365
     lower_period = 500
     bands = ["g","r","i","z"]
@@ -260,7 +260,15 @@ def find_strong_candidates():
         if is_candidate_strong(name):
             can.write(name+"\n")
 
+def record_success(name,success):
 
+    """ record the susseceful run """
+
+    f = open("finished.list","a")
+    f.write(str(name)+","+str(success)+"\n")
+    f.close()
+
+ 
 if __name__ == "__main__":
 
 #    df_quasar_list = read_quasar_catalog("strip82_catalog.csv")
@@ -275,4 +283,9 @@ if __name__ == "__main__":
     ra = float(ra)
     dec = float(dec)
     z = float(z)
-    main(ra,dec,name,z)
+    try:
+        main(ra,dec,name,z)
+        record_success(name,True)
+    except:
+        record_success(name,False)
+    

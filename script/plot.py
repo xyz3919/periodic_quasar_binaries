@@ -60,7 +60,7 @@ class plot:
         percentiles = [68.27,95.45,99.0,99.74,99.99]
         for percentile in percentiles:
            bounday_psd_at_each__freq = [np.percentile(psd,50+percentile/2.) for psd in psd_at_each__freq]
-           ax.plot(_freq/365,bounday_psd_at_each__freq,"--",c="black",linewidth=0.2)
+           ax.plot(_freq/365,bounday_psd_at_each__freq,"--",c="black",linewidth=0.3)
 
     def plot_light_curve(self,time,signal,error,band):
 
@@ -94,7 +94,7 @@ class plot:
         ax_list = {"g":self.axes[0],"r":self.axes[1],\
                    "i":self.axes[2],"z":self.axes[3]}
         ax = ax_list[band]
-        ax.plot(time,signal,label=band,c="grey",linewidth=0.01)
+        ax.plot(time,signal,label=band,c="grey",linewidth=0.001)
 
     def savefig(self,dir_output,name,title):
 
