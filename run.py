@@ -6,6 +6,7 @@ from quasar_drw import quasar_drw as qso_drw
 from plot import plot
 import query as query
 
+from scipy import stats
 from scipy.optimize import curve_fit
 
 def read_quasar_catalog(filename):
@@ -87,12 +88,13 @@ def save_freq_amp(_freq, psd,filename):
      save_data = zip(_freq,psd)
      np.savetxt(filename,save_data,delimiter=",",header="period,amplitude")
 
-def save_freq_confidence_interval(_freq,boundary_all,filename):
+def save_freq_confidence_level(_freq,boundary_all,filename):
 
      period = np.array([_freq]).T
-     psd_array = np.array(boundary_all).T
+     psd_array = np.array([boundary_all]).T
+     print period,psd_array
      save_data = np.concatenate((period, psd_array), axis=1)
-     np.savetxt(filename,save_data,delimiter=",",header="period,amplitudes")
+     np.savetxt(filename,save_data,delimiter=",",header="period,confidence_level")
 
 def clean_parameters_list(parameters_list):
 
@@ -128,11 +130,15 @@ def tailored_simulation(lc,time,signal,band,z,name,output_dir,periodogram,lightc
     psd_at_each__freq = zip(*psd_mock_all)
     percentiles = [68.27,95.45,99.0,99.74]
     boundary_all = []
+    confidence_levels = []
+    _freq, psd_true = lc.ls_astroML()
     for percentile in percentiles:
         bounday_psd_at_each__freq = [np.percentile(psd,50+percentile/2.) for psd in psd_at_each__freq]
         boundary_all.append(bounday_psd_at_each__freq)
-    save_freq_confidence_interval(_freq_mock,boundary_all,output_dir+name+"/confidence_"+band+".csv")
-
+    for i in range(len(_freq)):
+        confidence_level_at_each__freq = float(stats.percentileofscore(psd_at_each__freq[i],psd_true[i]))
+        confidence_levels.append(100.-confidence_level_at_each__freq)
+    save_freq_confidence_level(_freq,confidence_levels,output_dir+name+"/confidence_"+band+".csv")
     periodogram.plot_confidence_level(_freq_mock, psd_mock_all, band)
 
 
