@@ -109,10 +109,10 @@ def clean_parameters_list(parameters_list):
 def tailored_simulation(lc,time,signal,band,z,name,output_dir,periodogram,lightcurve,random_state):
 
     psd_mock_all = []
-#    parameters_list =  lc.fit_drw_emcee(nwalkers=100, burnin=100, Nstep=200,random_state=random_state)
-    parameters_list =  lc.fit_drw_emcee(nwalkers=10, burnin=10, Nstep=20,random_state=random_state)
+    parameters_list =  lc.fit_drw_emcee(nwalkers=100, burnin=100, Nstep=200,random_state=random_state)
+#    parameters_list =  lc.fit_drw_emcee(nwalkers=10, burnin=10, Nstep=20,random_state=random_state)
     parameters_list_good = clean_parameters_list(parameters_list)
-    for i in range(50):
+    for i in range(5000):
 #    for parameters in parameters_list:
         tau,c,b = np.exp(parameters_list_good[random_state.randint(len(parameters_list_good))])
 #        tau,b,c = np.exp(parameters)
@@ -286,6 +286,5 @@ if __name__ == "__main__":
     try:
         main(ra,dec,name,z)
         record_success(name,True)
-    except:
+    except :
         record_success(name,False)
-    

@@ -164,8 +164,10 @@ class quasar_drw:
         for i in range(nwalkers):
             parameter = np.array([tau_sample[i], c_sample[i], b_sample[i]])
             pos.append(parameter)
-        sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(time, signal, error, z), a=4.0,random_state=random_state)
+        sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(time, signal, error, z), a=4.0)
         
+        # import random state 
+        sampler.random_state = random_state
         # start MCMC
         sampler.run_mcmc(pos, Nstep)
     
