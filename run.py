@@ -231,10 +231,11 @@ def is_candidate_strong(name):
     bands = ["g","r","i","z"]
     search_dir = "output/"
     for band in bands:
-        if os.path.exists(search_dir+name+"/periodogram_"+band+".csv"):
-            periodogram = pd.read_csv(search_dir+name+"/periodogram_"+band+".csv",names=["period","amplitude"],skiprows=1)
+        if os.path.exists(search_dir+name+"/confidence_"+band+".csv"):
+            periodogram = pd.read_csv(search_dir+name+"/periodogram_"+band+".csv",names=["period","confidence"],skiprows=1)
             periodogram1 = periodogram[periodogram["period"]<upper_period]
             periodogram2= periodogram1[periodogram1["period"]>lower_period]
+            peak_confidence = max(periodogram2["confidence"])
             N = len(np.where(periodogram2["amplitude"]>amp_cut)[0])
             # check baseline is long enough
             if N>0:
@@ -255,16 +256,57 @@ def find_good_cadidates():
         name = row["name"]
         if is_candidate_good(name):
             can.write(name+"\n")
+def record_confidence_peak():
+
+    upper_period = 8*365
+    lower_period = 500
+    bands = ["g","r","i","z"]
+    search_dir = "output/"
+    f_confidence = open("statistics/candidates_confidence.txt","w")
+    f_confidence.write("name,peak_g,peak_r,peak_i,peak_z\n")
+    df_quasar_list = read_quasar_catalog("strip82_catalog.csv")
+    for index, row in df_quasar_list.iterrows():
+        name = row["name"]
+        f_confidence.write(name)
+        for band in bands:
+            if os.path.exists(search_dir+name+"/confidence_"+band+".csv"):
+                periodogram = pd.read_csv(search_dir+name+"/confidence_"+band+".csv",names=["period","confidence"],skiprows=1)
+                upper_period =max(periodogram["period"])/3
+                periodogram1 = periodogram[periodogram["period"]<upper_period]
+                periodogram2= periodogram1[periodogram1["period"]>lower_period]
+                if len(periodogram2) != 0 :
+                    peak_confidence = min(periodogram2["confidence"])
+                    f_confidence.write(","+str(peak_confidence))
+                else: f_confidence.write(",999")
+            else: f_confidence.write(",999")
+        f_confidence.write("\n")
+    f_confidence.close()
+
+def show_number_significance():
+
+    data_significance = pd.read_csv("statistics/candidates_confidence.txt")
+    bands = ["g","r","i","z"]
+    pvalues = np.logspace(np.log10(1),np.log10(0.0001),1000)
+    number_sig_plot = plot(1,1)
+    for band in bands:
+        N_list = []
+        for pvalue in pvalues:
+            N = len(np.where(data_significance["peak_"+band]<pvalue)[0])
+            N_list.append(N)
+        number_sig_plot.plot(pvalues,N_list,band,log=True)
+    number_sig_plot.savefig("statistics/","number_significance.png","Number vs. P-value")
+
+
 
 def find_strong_candidates():
 
     """ Compare the power with mock light curves """
-    can = open("statistics/strong_candidates.txt","w")
-    df_quasar_list = read_quasar_catalog("best_candidates.csv")
-    for index, row in df_quasar_list.iterrows():
-        name = row["name"]
-        if is_candidate_strong(name):
-            can.write(name+"\n")
+#    cand_strong = open("statistics/strong_candidates.txt","w")
+    cand = pd.read_csv("statistics/candidates_confidence.txt")
+    bands = ["g","r","i","z"]
+    for band in bands:
+        cand = cand[cand["peak_"+band]<2.25]
+    cand.to_csv("statistics/strong_candidates.csv")
 
 def record_success(name,success):
 
@@ -284,6 +326,10 @@ if __name__ == "__main__":
         
 #    find_strong_cadidates()
 #    main(43.0611,-0.470451,"J025214.66-002813.62",1.3)
+#    record_confidence_peak()
+    show_number_significance()
+    find_strong_candidates()
+    '''
     print sys.argv[1].split(",")
     name,ra,dec,z = sys.argv[1].split(",")
     ra = float(ra)
@@ -294,3 +340,4 @@ if __name__ == "__main__":
         record_success(name,True)
     except :
         record_success(name,False)
+    '''

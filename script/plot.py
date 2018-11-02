@@ -16,6 +16,18 @@ class plot:
 
         self.f,self.axes  = plt.subplots(cols, rows,**args)
 
+    def plot(self,x,y,band,log=False):
+
+        color_list = {"g":"g","r":"orange",\
+                      "i":"brown","z":"purple"}
+        self.axes.plot(x,y,label=band,c=color_list[band])
+        if log: 
+            self.axes.set_xscale("log")
+            self.axes.set_yscale("log")
+        self.axes.legend()
+
+
+
     def plot_periodogram(self,_freq, psd,band):
 
         ax_list = {"g":self.axes[0,0],"r":self.axes[0,1],\
