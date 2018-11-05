@@ -181,7 +181,7 @@ class quasar_drw:
     def generate_mock_lightcurve(self,tau,b,c,time,z,random_state=np.random.RandomState(0)):
   
         time_res = time/(1+z)
-        time_res_cont = np.linspace(min(time_res),max(time_res),10000)
+        time_res_cont = np.linspace(min(time_res),max(time_res),int(max(time_res)--min(time_res)))
         xmean = b*tau
         SFinf = np.sqrt(c*tau/2.)
         lightcurve_DRW_res_cont = generate_damped_RW(time_res_cont,tau,z,xmean=xmean,SFinf=SFinf,random_state=random_state)

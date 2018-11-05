@@ -111,10 +111,10 @@ def clean_parameters_list(parameters_list):
 def tailored_simulation(lc,time,signal,band,z,name,output_dir,periodogram,lightcurve,random_state):
 
     psd_mock_all = []
-    parameters_list =  lc.fit_drw_emcee(nwalkers=100, burnin=100, Nstep=200,random_state=random_state)
+    parameters_list =  lc.fit_drw_emcee(nwalkers=200, burnin=200, Nstep=400,random_state=random_state)
 #    parameters_list =  lc.fit_drw_emcee(nwalkers=10, burnin=10, Nstep=20,random_state=random_state)
     parameters_list_good = clean_parameters_list(parameters_list)
-    for i in range(5000):
+    for i in range(10000):
 #    for parameters in parameters_list:
         tau,c,b = np.exp(parameters_list_good[random_state.randint(len(parameters_list_good))])
 #        tau,b,c = np.exp(parameters)
@@ -286,7 +286,7 @@ def show_number_significance():
 
     data_significance = pd.read_csv("statistics/candidates_confidence.txt")
     bands = ["g","r","i","z"]
-    pvalues = np.logspace(np.log10(1),np.log10(0.0001),1000)
+    pvalues = np.logspace(np.log10(100),np.log10(0.0001),1000)
     number_sig_plot = plot(1,1)
     for band in bands:
         N_list = []
@@ -327,9 +327,8 @@ if __name__ == "__main__":
 #    find_strong_cadidates()
 #    main(43.0611,-0.470451,"J025214.66-002813.62",1.3)
 #    record_confidence_peak()
-    show_number_significance()
-    find_strong_candidates()
-    '''
+#    show_number_significance()
+#    find_strong_candidates()
     print sys.argv[1].split(",")
     name,ra,dec,z = sys.argv[1].split(",")
     ra = float(ra)
@@ -340,4 +339,3 @@ if __name__ == "__main__":
         record_success(name,True)
     except :
         record_success(name,False)
-    '''
